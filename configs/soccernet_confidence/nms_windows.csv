@@ -1,0 +1,18 @@
+label,window
+Penalty,20.0
+Kick-off,20.0
+Goal,20.0
+Substitution,20.0
+Offside,20.0
+Shots on target,20.0
+Shots off target,20.0
+Clearance,20.0
+Ball out of play,20.0
+Throw-in,20.0
+Foul,20.0
+Indirect free-kick,20.0
+Direct free-kick,20.0
+Corner,20.0
+Yellow card,20.0
+Red card,20.0
+Yellow->red card,20.0

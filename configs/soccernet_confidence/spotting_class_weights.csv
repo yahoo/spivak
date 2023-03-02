@@ -1,0 +1,18 @@
+label,weight
+Penalty,1.0
+Kick-off,1.0
+Goal,1.0
+Substitution,1.0
+Offside,1.0
+Shots on target,1.0
+Shots off target,1.0
+Clearance,1.0
+Ball out of play,1.0
+Throw-in,1.0
+Foul,1.0
+Indirect free-kick,1.0
+Direct free-kick,1.0
+Corner,1.0
+Yellow card,1.0
+Red card,1.0
+Yellow->red card,1.0

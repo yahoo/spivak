@@ -1,0 +1,18 @@
+label,window
+Penalty,4.0
+Kick-off,4.0
+Goal,4.0
+Substitution,4.0
+Offside,4.0
+Shots on target,4.0
+Shots off target,4.0
+Clearance,4.0
+Ball out of play,4.0
+Throw-in,4.0
+Foul,4.0
+Indirect free-kick,4.0
+Direct free-kick,4.0
+Corner,4.0
+Yellow card,4.0
+Red card,4.0
+Yellow->red card,4.0

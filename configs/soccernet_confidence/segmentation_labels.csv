@@ -1,0 +1,14 @@
+id,name,order
+0,Main camera center,1
+1,Close-up player or field referee,0
+2,Main camera left,6
+3,Main camera right,7
+4,Goal line technology camera,12
+5,Main behind the goal,5
+6,Spider camera,10
+7,Close-up side staff,2
+8,Close-up corner,8
+9,Close-up behind the goal,3
+10,Inside the goal,11
+11,Public,4
+12,Other,9

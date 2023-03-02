@@ -1,0 +1,18 @@
+label,window
+Penalty,3.0
+Kick-off,3.0
+Goal,3.0
+Substitution,3.0
+Offside,3.0
+Shots on target,3.0
+Shots off target,3.0
+Clearance,3.0
+Ball out of play,3.0
+Throw-in,3.0
+Foul,3.0
+Indirect free-kick,3.0
+Direct free-kick,3.0
+Corner,3.0
+Yellow card,3.0
+Red card,3.0
+Yellow->red card,3.0

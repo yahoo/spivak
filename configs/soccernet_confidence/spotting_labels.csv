@@ -1,0 +1,18 @@
+id,name,order
+0,Penalty,14
+1,Kick-off,9
+2,Goal,13
+3,Substitution,8
+4,Offside,11
+5,Shots on target,5
+6,Shots off target,6
+7,Clearance,4
+8,Ball out of play,0
+9,Throw-in,1
+10,Foul,2
+11,Indirect free-kick,3
+12,Direct free-kick,10
+13,Corner,7
+14,Yellow card,12
+15,Red card,15
+16,Yellow->red card,16
