@@ -20,7 +20,7 @@ from spivak.models.video_start_provider import VideoStartProviderInterface
 # speed and bottleneck, as well as looking at memory consumption, I chose the
 # number below (32), which might need to be tweaked if/when the input data or
 # pipeline changes.
-N_VIDEO_CHUNKS_PARALLEL_CALLS = 32
+N_VIDEO_CHUNKS_PARALLEL_CALLS = 4
 # Setting the prefetch size to None will end up doing auto-tuning,
 # which works well in general. However, to save memory, I manually set the
 # BATCH_PREFETCH_SIZE to 1, which also works well while using slightly less
@@ -61,8 +61,6 @@ def create_tf_task_batch_dataset(
         batch_augmentation: Optional[Callable]) -> TFDataset:
     """Shuffling takes up some amount of memory, which is why we make it
     optional."""
-    # Since we shuffle the chunks below, I'm avoiding shuffling the videos up
-    # here, in order to save a bit of memory.
     chunks_dataset = (
         tf_task_videos_dataset
         .repeat(repetitions)

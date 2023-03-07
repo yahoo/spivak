@@ -417,7 +417,9 @@ def _tf_dataset(
             heads, task, num_chunk_frames)
         video_start_provider = video_start_providers[task]
         num_chunks_float = video_start_provider.get_num_chunks_dataset_float(
-            dataset.video_data)
+            dataset.video_data) * 0.04
+        if shuffle:
+            logging.info(f"num_chunks_float: {num_chunks_float}")
         chunk_shuffle_size = math.ceil(num_chunks_float)
         task_batch_dataset = create_tf_task_batch_dataset(
             tf_task_videos_datasets[task], tf_get_video_chunks, repetitions,

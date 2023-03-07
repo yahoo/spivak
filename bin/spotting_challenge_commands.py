@@ -40,6 +40,9 @@ BAIDU_TWO_FEATURE_NAME = "baidu_2.0"
 # AVERAGED_CONFIDENCE is used only for creating directory names.
 AVERAGED_CONFIDENCE = "averaged_confidence"
 CONCATENATED_CONFIDENCE_FEATURES_DIR = "concatenated_confidence"
+LOW_MEMORY_PARAMETERS = {
+    "-cf": "0"
+}
 DELTA_TEST_PARAMETERS = {
     SPLIT_KEY_VALIDATION: {
         "-nmsd": "linear"
@@ -367,6 +370,7 @@ def _command_spotting_confidence_train(
                 base_config_dir, CONFIG_DIR_CHALLENGE_CONFIDENCE),
             **detector_args(DETECTOR_DENSE),
             **confidence_train_hyperparameters,
+            **LOW_MEMORY_PARAMETERS,
             "-m": confidence_model_dir
         }
     )
@@ -424,6 +428,7 @@ def _command_spotting_delta_train(
         "-cd": os.path.join(base_config_dir, CONFIG_DIR_CHALLENGE_DELTA),
         **detector_args(DETECTOR_DENSE_DELTA),
         **delta_train_hyperparameters,
+        **LOW_MEMORY_PARAMETERS,
         "-m": delta_model_dir,
     }
     if confidence_validation_results_dir:

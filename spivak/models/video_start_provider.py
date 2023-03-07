@@ -22,7 +22,7 @@ from spivak.data.dataset import VideoDatum, LabelsFromTaskDict, Task, \
 # any given batch. For example, if we sample a really large amount of chunks
 # per video, and we're not doing any shuffling, a single video could occupy a
 # whole batch.
-CHUNKS_PER_MINUTE = 0.02
+CHUNKS_PER_MINUTE = 2.0
 SECONDS_IN_A_MINUTE = 60.0
 MIN_VALID_CHUNK_FRAMES_WARNING_MULTIPLIER = 2.0
 
