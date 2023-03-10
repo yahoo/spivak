@@ -14,15 +14,6 @@ import tensorflow_probability as tfp
 from spivak.data.dataset import VideoDatum, LabelsFromTaskDict, Task, \
     INDEX_LABELS, INDEX_VALID
 
-# The value of CHUNKS_PER_MINUTE controls how many samples are taken from each
-# video each time the dataset is repeated. We keep it low so that the data
-# pipeline does not take up too much memory. CHUNKS_PER_MINUTE will affect the
-# memory consumption when shuffling is being used. Depending on the type
-# of shuffling, it will also affect the number of videos that participate in
-# any given batch. For example, if we sample a really large amount of chunks
-# per video, and we're not doing any shuffling, a single video could occupy a
-# whole batch.
-CHUNKS_PER_MINUTE = 2.0
 SECONDS_IN_A_MINUTE = 60.0
 MIN_VALID_CHUNK_FRAMES_WARNING_MULTIPLIER = 2.0
 
@@ -32,7 +23,8 @@ TFDataset = tf.data.Dataset
 class VideoStartProviderInterface(metaclass=ABCMeta):
 
     @abstractmethod
-    def create_tf_starts_dataset(self, tf_labels_from_task_dict_dataset):
+    def create_tf_starts(
+            self, video_labels_from_task: LabelsFromTaskDict) -> tf.Tensor:
         pass
 
     @abstractmethod
@@ -46,7 +38,9 @@ class VideoStartProviderInterface(metaclass=ABCMeta):
 class VideoStartProviderUniform(VideoStartProviderInterface):
 
     def __init__(
-            self, min_valid_chunk_frames: int, frame_rate: float, task: Task):
+            self, chunks_per_minute: float, min_valid_chunk_frames: int,
+            frame_rate: float, task: Task) -> None:
+        self._chunks_per_minute = chunks_per_minute
         self._min_valid_chunk_frames = min_valid_chunk_frames
         self._frame_rate = frame_rate
         self._task = task
@@ -55,22 +49,20 @@ class VideoStartProviderUniform(VideoStartProviderInterface):
             self, video_data: List[VideoDatum]) -> float:
         num_chunks_float_per_video = [
             _compute_num_chunks_float(
-                self._frame_rate, video_datum.num_frames, CHUNKS_PER_MINUTE)
+                self._frame_rate, video_datum.num_frames,
+                self._chunks_per_minute)
             for video_datum in video_data
             if video_datum.valid_labels(self._task)
         ]
         return sum(num_chunks_float_per_video)
 
-    def create_tf_starts_dataset(
-            self, tf_labels_from_task_dict_dataset: TFDataset) -> TFDataset:
-        return tf_labels_from_task_dict_dataset.map(self._tf_get_starts)
-
-    def _tf_get_starts(self, video_labels_from_task: LabelsFromTaskDict):
+    def create_tf_starts(
+            self, video_labels_from_task: LabelsFromTaskDict) -> tf.Tensor:
         video_labels = video_labels_from_task[self._task]
         valid_labels = video_labels[INDEX_VALID]
         num_video_frames = tf.shape(video_labels[INDEX_LABELS])[0]
         num_chunks = tf.cast(valid_labels, tf.int32) * _tf_sample_num_chunks(
-            self._frame_rate, num_video_frames, CHUNKS_PER_MINUTE)
+            self._frame_rate, num_video_frames, self._chunks_per_minute)
         # random.uniform chooses integers from minval (0 by default) up to
         # maxval - 1, so we add 1 to start_end below.
         start_end = tf.maximum(
@@ -82,8 +74,9 @@ class VideoStartProviderUniform(VideoStartProviderInterface):
 class VideoStartProviderWeighted(VideoStartProviderInterface):
 
     def __init__(
-            self, frame_rate: float,
+            self, chunks_per_minute: float, frame_rate: float,
             start_probabilities_creator: "StartProbabilitiesCreator") -> None:
+        self._chunks_per_minute = chunks_per_minute
         self._frame_rate = frame_rate
         self._start_probabilities_creator = start_probabilities_creator
 
@@ -91,14 +84,16 @@ class VideoStartProviderWeighted(VideoStartProviderInterface):
             self, video_data: List[VideoDatum]) -> float:
         return sum(
             _compute_num_chunks_float(
-                self._frame_rate, video_datum.num_frames, CHUNKS_PER_MINUTE)
+                self._frame_rate, video_datum.num_frames,
+                self._chunks_per_minute)
             for video_datum in video_data
         )
 
-    def create_tf_starts_dataset(self, tf_labels_from_task_dict_dataset):
-        tf_start_probabilities_dataset = tf_labels_from_task_dict_dataset.map(
-            self._tf_get_start_probabilities).cache()
-        return tf_start_probabilities_dataset.map(self._tf_get_starts)
+    def create_tf_starts(
+            self, video_labels_from_task: LabelsFromTaskDict) -> tf.Tensor:
+        return self._tf_get_starts(
+            self._tf_get_start_probabilities(video_labels_from_task)
+        )
 
     def _tf_get_start_probabilities(
             self, video_labels_from_task: LabelsFromTaskDict):
@@ -114,10 +109,10 @@ class VideoStartProviderWeighted(VideoStartProviderInterface):
     def _video_start_probabilities(self, video_labels):
         return self._start_probabilities_creator.create(video_labels)
 
-    def _tf_get_starts(self, video_start_probabilities):
+    def _tf_get_starts(self, video_start_probabilities) -> tf.Tensor:
         num_video_frames = tf.shape(video_start_probabilities)[0]
         num_chunks = _tf_sample_num_chunks(
-            self._frame_rate, num_video_frames, CHUNKS_PER_MINUTE)
+            self._frame_rate, num_video_frames, self._chunks_per_minute)
         distribution = tfp.distributions.Categorical(
             probs=video_start_probabilities)
         return distribution.sample(num_chunks)

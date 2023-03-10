@@ -25,6 +25,18 @@ calls below. These arguments are optional. If they are not explicitly
 provided, they will default to the values defined in
 [bin/command_user_constants.py](bin/command_user_constants.py).
 
+### Low memory configuration
+
+We recommend having 256GB of CPU memory available in general, though we
+have also created a configuration that works with only 64GB. This is still
+experimental, and is significantly slower than our standard setup. In
+addition, we're not yet sure if it will provide the same results, since it
+does less shuffling of the input samples. In order to experiment with the
+64GB configuration, set `MEMORY_SETUP = MEMORY_SETUP_64GB` in
+[bin/command_user_constants.py](bin/command_user_constants.py),
+or pass `memory_setup=MEMORY_SETUP_64GB` as an extra input to the
+functions below that involve training models.
+
 ## Experiments
 
 The nomenclature used below in the description of the experiments follows the
@@ -64,7 +76,7 @@ The
 [paper related to our challenge submissions](https://arxiv.org/abs/2206.07846) includes
 some results using the Test protocol in order to help explain the improvements obtained
 relative to our [previous paper](https://arxiv.org/abs/2205.10450), which introduced
-the action spotting approach using dense detection anchors.
+our action spotting approach that uses dense detection anchors.
 
 ### Feature pre-processing
 

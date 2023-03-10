@@ -69,15 +69,16 @@ from spivak.models.averaging_predictor import DeltaAveragingPredictor, \
 from spivak.models.delta_dense_predictor import DeltaDensePredictor
 from spivak.models.dense_predictor import OUTPUT_CONFIDENCE, OUTPUT_DELTA, \
     OUTPUT_CONFIDENCE_AUX, OUTPUT_DELTA_AUX, DensePredictor
-from spivak.models.non_maximum_suppression import FlexibleNonMaximumSuppression, \
-    ScoreDecaySuppress, ScoreDecayLinear
+from spivak.models.non_maximum_suppression import \
+    FlexibleNonMaximumSuppression, ScoreDecaySuppress, ScoreDecayLinear
 from spivak.models.predictor import PredictorInterface
 from spivak.models.projector import Projector
 from spivak.models.sam_model import SAMModel, maybe_convert_model_to_sam
 from spivak.models.tf_dataset import create_tf_merged_batch_dataset, \
     create_tf_get_video_chunks, create_tf_mixup_batch_augmentation, TFDataset, \
     create_tf_task_batch_dataset, create_tf_task_videos_datasets
-from spivak.models.trainer import DefaultTrainer, FittingDataset, TrainerInterface
+from spivak.models.trainer import DefaultTrainer, FittingDataset, \
+    TrainerInterface
 from spivak.models.video_start_provider import VideoStartProviderInterface, \
     VideoStartProviderUniform, VideoStartProviderWeighted, \
     compute_min_valid_chunk_frames, StartProbabilitiesCreator
@@ -363,19 +364,21 @@ def _create_dense_predictor(
 
 
 def _trainer(
-        model: Model, trainer_heads, args, training_set: Dataset,
+        model: Model, trainer_heads: List[TrainerHeadInterface],
+        args: SharedArgs, training_set: Dataset,
         validation_set: Optional[Dataset]) -> DefaultTrainer:
     logging.info(f"Preparing training TF dataset from "
                  f"{training_set.num_videos} videos")
     fitting_training_set = _fitting_dataset(
-        args, training_set, trainer_heads, INDEFINITE_REPETITIONS, shuffle=True)
+        args, training_set, trainer_heads, INDEFINITE_REPETITIONS,
+        shuffle_videos=args.shuffle_videos, chunk_shuffle=args.chunk_shuffle)
     if validation_set:
         logging.info(f"Preparing validation TF dataset from "
                      f"{validation_set.num_videos} videos")
         # TODO: maybe remove randomness when generating batches for validation.
         fitting_validation_set = _fitting_dataset(
             args, validation_set, trainer_heads, INDEFINITE_REPETITIONS,
-            shuffle=False)
+            shuffle_videos=False, chunk_shuffle=0.0)
     else:
         fitting_validation_set = None
     return DefaultTrainer(
@@ -385,13 +388,14 @@ def _trainer(
 def _fitting_dataset(
         args: SharedArgs, dataset: Dataset,
         heads: List[TrainerHeadInterface], repetitions: Optional[int],
-        shuffle: bool) -> FittingDataset:
+        shuffle_videos: bool, chunk_shuffle: float) -> FittingDataset:
     # At the moment, we could initialize video_start_providers outside and
     # share it between the training and validation datasets, but eventually
     # those datasets should have different video_start_provider settings.
     video_start_providers = _video_start_providers(args, dataset)
     tf_dataset = _tf_dataset(
-        args, dataset, heads, video_start_providers, repetitions, shuffle)
+        args, dataset, heads, video_start_providers, repetitions,
+        shuffle_videos, chunk_shuffle)
     num_tasks = len(dataset.tasks)
     num_batches_per_epoch = num_tasks * math.ceil(
         CHUNKS_PER_EPOCH / args.batch_size)
@@ -402,7 +406,8 @@ def _tf_dataset(
         args: SharedArgs, dataset: Dataset,
         heads: List[TrainerHeadInterface],
         video_start_providers: Dict[Task, VideoStartProviderInterface],
-        repetitions: Optional[int], shuffle: bool) -> TFDataset:
+        repetitions: Optional[int], shuffle_videos: bool,
+        chunk_shuffle: float) -> TFDataset:
     num_chunk_frames = math.floor(args.frame_rate * args.chunk_duration)
     if args.mixup_alpha:
         mixup_batch_augmentation = create_tf_mixup_batch_augmentation(
@@ -411,20 +416,22 @@ def _tf_dataset(
         mixup_batch_augmentation = None
     batch_datasets = []
     tf_task_videos_datasets = create_tf_task_videos_datasets(
-        dataset, heads, video_start_providers, bool(args.cache_features))
+        dataset, heads, video_start_providers, bool(args.cache_dataset),
+        shuffle_videos)
     for task in tf_task_videos_datasets:
         tf_get_video_chunks = create_tf_get_video_chunks(
             heads, task, num_chunk_frames)
         video_start_provider = video_start_providers[task]
-        num_chunks_float = video_start_provider.get_num_chunks_dataset_float(
-            dataset.video_data) * 0.04
-        if shuffle:
-            logging.info(f"num_chunks_float: {num_chunks_float}")
-        chunk_shuffle_size = math.ceil(num_chunks_float)
+        chunk_shuffle_size_float = \
+            video_start_provider.get_num_chunks_dataset_float(
+                dataset.video_data) * chunk_shuffle
+        chunk_shuffle_size = math.ceil(chunk_shuffle_size_float)
+        if chunk_shuffle_size:
+            logging.info(f"chunk_shuffle_size: {chunk_shuffle_size}")
         task_batch_dataset = create_tf_task_batch_dataset(
-            tf_task_videos_datasets[task], tf_get_video_chunks, repetitions,
-            args.batch_size, shuffle, chunk_shuffle_size,
-            mixup_batch_augmentation)
+            tf_task_videos_datasets[task], tf_get_video_chunks,
+            args.get_chunks_parallelism, repetitions, args.batch_size,
+            chunk_shuffle_size, mixup_batch_augmentation)
         batch_datasets.append(task_batch_dataset)
     return create_tf_merged_batch_dataset(batch_datasets)
 
@@ -446,13 +453,15 @@ def _video_start_provider(
         video_data, args.frame_rate, args.min_valid_chunk_duration)
     if args.sampling == SAMPLING_UNIFORM:
         return VideoStartProviderUniform(
-            min_valid_chunk_frames, args.frame_rate, task)
+            args.chunks_per_minute, min_valid_chunk_frames, args.frame_rate,
+            task)
     elif args.sampling == SAMPLING_WEIGHTED:
         start_probabilities_creator = StartProbabilitiesCreator(
             num_chunk_frames, min_valid_chunk_frames,
             args.sampling_negative_fraction)
         return VideoStartProviderWeighted(
-            args.frame_rate, start_probabilities_creator)
+            args.chunks_per_minute, args.frame_rate,
+            start_probabilities_creator)
     else:
         raise ValueError(f"Unknown negative sampling strategy: {args.sampling}")
 

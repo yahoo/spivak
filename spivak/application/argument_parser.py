@@ -83,8 +83,23 @@ class Defaults:
     VALIDATION_EPOCHS = 10
     SAVE_EPOCHS = 10
     BATCH_SIZE = 256
+    SHUFFLE_VIDEOS = 0
+    CHUNK_SHUFFLE = 1.0
+    # By looking at the profiler to understand the speed and bottleneck, as
+    # well as looking at memory consumption, I chose the number below (32),
+    # which might need to be tweaked if/when the input data or pipeline changes.
+    GET_CHUNKS_PARALLELISM = 32
     MIXUP_ALPHA = 0.0
     SAMPLING = SAMPLING_UNIFORM
+    # The value of CHUNKS_PER_MINUTE controls how many samples are taken from
+    # each video each time the dataset is repeated. We keep it low so that
+    # the data pipeline does not take up too much memory. CHUNKS_PER_MINUTE
+    # will affect the memory consumption when shuffling is being used.
+    # Depending on the type of shuffling, it will also affect the number of
+    # videos that participate in any given batch. For example, if we sample a
+    # really large amount of chunks per video, and we're not doing any
+    # shuffling, a single video could occupy a whole batch.
+    CHUNKS_PER_MINUTE = 0.02
     # This fraction is used when sampling chunks (not frames). It's probably
     # good to avoid setting this too low, so that we get more variety in the
     # training data (at least some sampling from negatives), though
@@ -99,7 +114,7 @@ class Defaults:
     POSITIVE_WEIGHT_CONFIDENCE = 0.03
     POSITIVE_WEIGHT_DELTA = 1.0
     SEGMENTATION_WEIGHT_TEMPERATURE = 0.0
-    CACHE_FEATURES = 1
+    CACHE_DATASET = 1
     OPTIMIZER = OPTIMIZER_ADAM
     # I wasn't able to get speed improvements when using mixed precision with
     # my models (speed became slightly worse).
@@ -245,8 +260,12 @@ class SharedArgs:
         self.validation_epochs = Defaults.VALIDATION_EPOCHS
         self.save_epochs = Defaults.SAVE_EPOCHS
         self.batch_size = Defaults.BATCH_SIZE
+        self.shuffle_videos = Defaults.SHUFFLE_VIDEOS
+        self.chunk_shuffle = Defaults.CHUNK_SHUFFLE
+        self.get_chunks_parallelism = Defaults.GET_CHUNKS_PARALLELISM
         self.mixup_alpha = Defaults.MIXUP_ALPHA
         self.sampling = Defaults.SAMPLING
+        self.chunks_per_minute = Defaults.CHUNKS_PER_MINUTE
         self.sampling_negative_fraction = Defaults.SAMPLING_NEGATIVE_FRACTION
         self.sampling_negative_rate_delta = \
             Defaults.SAMPLING_NEGATIVE_RATE_DELTA
@@ -256,7 +275,7 @@ class SharedArgs:
         self.positive_weight_delta = Defaults.POSITIVE_WEIGHT_DELTA
         self.segmentation_weight_temperature = \
             Defaults.SEGMENTATION_WEIGHT_TEMPERATURE
-        self.cache_features = Defaults.CACHE_FEATURES
+        self.cache_dataset = Defaults.CACHE_DATASET
         self.optimizer = Defaults.OPTIMIZER
         self.mixed_precision = Defaults.MIXED_PRECISION
         self.sam_rho = Defaults.SAM_RHO
@@ -345,15 +364,19 @@ class SharedArgs:
         shared_args.validation_epochs = args.validation_epochs
         shared_args.save_epochs = args.save_epochs
         shared_args.batch_size = args.batch_size
+        shared_args.shuffle_videos = args.shuffle_videos
+        shared_args.chunk_shuffle = args.chunk_shuffle
+        shared_args.get_chunks_parallelism = args.get_chunks_parallelism
         shared_args.mixup_alpha = args.mixup_alpha
         shared_args.sampling = args.sampling
+        shared_args.chunks_per_minute = args.chunks_per_minute
         shared_args.sampling_negative_fraction = \
             args.sampling_negative_fraction
         shared_args.sampling_negative_rate_delta = \
             args.sampling_negative_rate_delta
         shared_args.sampling_negative_rate_confidence = \
             args.sampling_negative_rate_confidence
-        shared_args.cache_features = args.cache_features
+        shared_args.cache_dataset = args.cache_dataset
         shared_args.positive_weight_confidence = \
             args.positive_weight_confidence
         shared_args.positive_weight_delta = args.positive_weight_delta
@@ -509,6 +532,18 @@ def _create_parser():
         "--batch_size", "-bs", help="Batch size (in number of chunks)",
         type=int, default=Defaults.BATCH_SIZE)
     parser.add_argument(
+        "--shuffle_videos", "-sv",
+        help="Whether to shuffle the videos when training", type=int,
+        default=Defaults.SHUFFLE_VIDEOS, choices=[0, 1])
+    parser.add_argument(
+        "--chunk_shuffle", "-cs",
+        help="What portion of the dataset to buffer when shuffling the video "
+             "chunks", type=float, default=Defaults.CHUNK_SHUFFLE)
+    parser.add_argument(
+        "--get_chunks_parallelism", "-gcp",
+        help="How many threads to run when getting chunks from videos",
+        type=int, default=Defaults.GET_CHUNKS_PARALLELISM)
+    parser.add_argument(
         "--mixup_alpha", "-mu", help="Alpha used for mix-up", type=float,
         default=Defaults.MIXUP_ALPHA)
     parser.add_argument(
@@ -516,6 +551,11 @@ def _create_parser():
         help="Sampling strategy for getting chunks from videos", type=str,
         default=Defaults.SAMPLING, choices=[
             SAMPLING_UNIFORM, SAMPLING_WEIGHTED])
+    parser.add_argument(
+        "--chunks_per_minute", "-cpm",
+        help="How many chunks per minute to extract from video features each "
+             "time those video features are visited", type=float,
+        default=Defaults.CHUNKS_PER_MINUTE)
     parser.add_argument(
         "--positive_weight_confidence", "-pwc",
         help="Overall weight of positive samples relative to negative "
@@ -533,9 +573,9 @@ def _create_parser():
         help="Temperature of the segmentation class weights.", type=float,
         default=Defaults.SEGMENTATION_WEIGHT_TEMPERATURE)
     parser.add_argument(
-        "--cache_features", "-cf",
-        help="Whether to cache the features during training.", type=int,
-        default=Defaults.CACHE_FEATURES, choices=[0, 1])
+        "--cache_dataset", "-cds",
+        help="Whether to cache the dataset during training.", type=int,
+        default=Defaults.CACHE_DATASET, choices=[0, 1])
     parser.add_argument(
         "--sampling_negative_fraction", "-snf",
         help="Fraction of negative samples when sampling chunks from videos "

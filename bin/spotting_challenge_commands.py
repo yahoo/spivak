@@ -10,7 +10,8 @@ from typing import List, Optional
 from bin.command_user_constants import BAIDU_FEATURES_DIR, \
     BAIDU_TWO_FEATURES_DIR, RESNET_FEATURES_DIR, \
     RESNET_NORMALIZED_FEATURES_DIR, SPLITS_DIR, MODELS_DIR, LABELS_DIR, \
-    BASE_CONFIG_DIR, RESULTS_DIR, RUN_NAME, FEATURES_DIR
+    BASE_CONFIG_DIR, RESULTS_DIR, RUN_NAME, FEATURES_DIR, MEMORY_SETUP, \
+    MEMORY_SETUP_256GB, MEMORY_SETUP_64GB
 from bin.create_features_from_results import Args as FromResultsArgs
 from bin.create_normalizer import Args as CreateNormalizerArgs, \
     NORMALIZER_MAX_ABS
@@ -40,8 +41,47 @@ BAIDU_TWO_FEATURE_NAME = "baidu_2.0"
 # AVERAGED_CONFIDENCE is used only for creating directory names.
 AVERAGED_CONFIDENCE = "averaged_confidence"
 CONCATENATED_CONFIDENCE_FEATURES_DIR = "concatenated_confidence"
-LOW_MEMORY_PARAMETERS = {
-    "-cf": "0"
+MEMORY_TRAIN_PARAMETERS = {
+    MEMORY_SETUP_256GB: {
+        BAIDU_TWO_FEATURE_NAME: {},
+        RESNET_NORMALIZED_FEATURE_NAME: {}
+    },
+    MEMORY_SETUP_64GB: {
+        BAIDU_TWO_FEATURE_NAME: {
+            "-cds": "0",    # Don't cache the dataset
+            "-cpm": "2.0",  # Sample more chunks each time the features are read
+            "-cs": "0.08",  # Use a smaller buffer to shuffle the chunks
+            "-sv": "1",     # Shuffle the videos
+            "-gcp": "0"     # Remove parallelism from chunk creation
+        },
+        # TODO: Adjust the parameters for the normalized ResNet features
+        RESNET_NORMALIZED_FEATURE_NAME: {
+            "-cds": "0",    # Don't cache the dataset
+            "-cpm": "2.0",  # Sample more chunks each time the features are read
+            "-cs": "0.08",  # Use a smaller buffer to shuffle the chunks
+            "-sv": "1",     # Shuffle the videos
+            "-gcp": "0"     # Remove parallelism from chunk creation
+        }
+    }
+}
+ENVIRONMENT_VARIABLES_REDUCE_MEMORY = {
+    # Setting the variable below addresses an issue with too much memory
+    # growth in tensorflow 2.3.0. Unfortunately, it also slows things
+    # down. See:
+    # https://github.com/tensorflow/tensorflow/issues/44176
+    # In practice, using 0 seemed faster than 128 * 1024, even though both
+    # worked to stop the memory growth.
+    "MALLOC_TRIM_THRESHOLD_": "0"
+}
+MEMORY_TRAIN_ENVIRONMENT_VARIABLES = {
+    MEMORY_SETUP_256GB: {
+        BAIDU_TWO_FEATURE_NAME: {},
+        RESNET_NORMALIZED_FEATURE_NAME: {}
+    },
+    MEMORY_SETUP_64GB: {
+        BAIDU_TWO_FEATURE_NAME: ENVIRONMENT_VARIABLES_REDUCE_MEMORY,
+        RESNET_NORMALIZED_FEATURE_NAME: ENVIRONMENT_VARIABLES_REDUCE_MEMORY
+    }
 }
 DELTA_TEST_PARAMETERS = {
     SPLIT_KEY_VALIDATION: {
@@ -170,13 +210,15 @@ def commands_spotting_challenge_validated(
         models_dir: str = MODELS_DIR,
         labels_dir: str = LABELS_DIR,
         splits_dir: str = SPLITS_DIR,
-        base_config_dir: str = BASE_CONFIG_DIR
+        base_config_dir: str = BASE_CONFIG_DIR,
+        memory_setup: str = MEMORY_SETUP
 ) -> List[Command]:
     dataset_type = DATASET_TYPE_SOCCERNET_V2_CHALLENGE_VALIDATION
     protocol_name = SPOTTING_CHALLENGE_VALIDATED
     confidence_train_command = _command_spotting_confidence_train(
         specific_features_dir, feature_name, dataset_type, protocol_name,
-        run_name, models_dir, labels_dir, splits_dir, base_config_dir)
+        run_name, models_dir, labels_dir, splits_dir, base_config_dir,
+        memory_setup)
     # Run the confidence model on the validation split, so that the confidence
     # scores can be used during the validation step when training the delta
     # model below.
@@ -190,7 +232,7 @@ def commands_spotting_challenge_validated(
     delta_train_command = _command_spotting_delta_train(
         confidence_validation_results_dir, specific_features_dir, feature_name,
         dataset_type, protocol_name, run_name, models_dir, labels_dir,
-        splits_dir, base_config_dir)
+        splits_dir, base_config_dir, memory_setup)
     # Run testing on both the validation (SPLIT_KEY_VALIDATION) and challenge
     # (SPLIT_KEY_UNLABELED) splits.
     last_test_commands = []
@@ -222,16 +264,19 @@ def commands_spotting_challenge(
         models_dir: str = MODELS_DIR,
         labels_dir: str = LABELS_DIR,
         splits_dir: str = SPLITS_DIR,
-        base_config_dir: str = BASE_CONFIG_DIR
+        base_config_dir: str = BASE_CONFIG_DIR,
+        memory_setup: str = MEMORY_SETUP
 ) -> List[Command]:
     dataset_type = DATASET_TYPE_SOCCERNET_V2_CHALLENGE
     protocol_name = SPOTTING_CHALLENGE
     confidence_train_command = _command_spotting_confidence_train(
         specific_features_dir, feature_name, dataset_type, protocol_name,
-        run_name, models_dir, labels_dir, splits_dir, base_config_dir)
+        run_name, models_dir, labels_dir, splits_dir, base_config_dir,
+        memory_setup)
     delta_train_command = _command_spotting_delta_train(
         None, specific_features_dir, feature_name, dataset_type, protocol_name,
-        run_name, models_dir, labels_dir, splits_dir, base_config_dir)
+        run_name, models_dir, labels_dir, splits_dir, base_config_dir,
+        memory_setup)
     challenge_results_dir = _spotting_confidence_and_delta_results_dir(
         CONFIDENCE, feature_name, SPLIT_KEY_UNLABELED, dataset_type,
         protocol_name, run_name, results_dir)
@@ -347,7 +392,7 @@ print_commands = print_command_list
 def _command_spotting_confidence_train(
         specific_features_dir: str, feature_name: str, dataset_type: str,
         protocol_name: str, run_name: str, models_dir: str, labels_dir: str,
-        splits_dir: str, base_config_dir: str) -> Command:
+        splits_dir: str, base_config_dir: str, memory_setup: str) -> Command:
     confidence_train_hyperparameters = TRAIN_HYPERPARAMETERS[dataset_type][
         feature_name][CONFIDENCE]
     confidence_model_dir = os.path.join(
@@ -368,11 +413,12 @@ def _command_spotting_confidence_train(
             "-dt": dataset_type,
             "-cd": os.path.join(
                 base_config_dir, CONFIG_DIR_CHALLENGE_CONFIDENCE),
+            **MEMORY_TRAIN_PARAMETERS[memory_setup][feature_name],
             **detector_args(DETECTOR_DENSE),
             **confidence_train_hyperparameters,
-            **LOW_MEMORY_PARAMETERS,
             "-m": confidence_model_dir
-        }
+        },
+        env_vars=MEMORY_TRAIN_ENVIRONMENT_VARIABLES[memory_setup][feature_name]
     )
 
 
@@ -414,7 +460,7 @@ def _command_spotting_delta_train(
         confidence_validation_results_dir: Optional[str],
         specific_features_dir: str, feature_name: str, dataset_type: str,
         protocol_name: str, run_name: str, models_dir: str, labels_dir: str,
-        splits_dir: str, base_config_dir: str) -> Command:
+        splits_dir: str, base_config_dir: str, memory_setup: str) -> Command:
     delta_train_hyperparameters = TRAIN_HYPERPARAMETERS[dataset_type][
         feature_name][DELTA]
     delta_model_dir = _spotting_delta_model_dir(
@@ -426,9 +472,9 @@ def _command_spotting_delta_train(
         "-fn": feature_name,
         "-dt": dataset_type,
         "-cd": os.path.join(base_config_dir, CONFIG_DIR_CHALLENGE_DELTA),
+        **MEMORY_TRAIN_PARAMETERS[memory_setup][feature_name],
         **detector_args(DETECTOR_DENSE_DELTA),
         **delta_train_hyperparameters,
-        **LOW_MEMORY_PARAMETERS,
         "-m": delta_model_dir,
     }
     if confidence_validation_results_dir:
@@ -436,7 +482,10 @@ def _command_spotting_delta_train(
     return Command(
         f"Train the displacement (delta) model on the {dataset_type} dataset "
         f"using {feature_name} features",
-        SCRIPT_TRAIN, command_arguments)
+        SCRIPT_TRAIN,
+        command_arguments,
+        env_vars=MEMORY_TRAIN_ENVIRONMENT_VARIABLES[memory_setup][feature_name]
+    )
 
 
 def _commands_spotting_delta_test(
