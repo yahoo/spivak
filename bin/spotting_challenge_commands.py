@@ -47,6 +47,8 @@ MEMORY_TRAIN_PARAMETERS = {
         RESNET_NORMALIZED_FEATURE_NAME: {}
     },
     MEMORY_SETUP_64GB: {
+        # TODO: Experiment with higher cpm (chunks per minute) to increase
+        #  speed at the cost of less mixing of chunks across videos.
         BAIDU_TWO_FEATURE_NAME: {
             "-cds": "0",    # Don't cache the dataset
             "-cpm": "2.0",  # Sample more chunks each time the features are read
@@ -54,14 +56,9 @@ MEMORY_TRAIN_PARAMETERS = {
             "-sv": "1",     # Shuffle the videos
             "-gcp": "0"     # Remove parallelism from chunk creation
         },
-        # TODO: Adjust the parameters for the normalized ResNet features
-        RESNET_NORMALIZED_FEATURE_NAME: {
-            "-cds": "0",    # Don't cache the dataset
-            "-cpm": "2.0",  # Sample more chunks each time the features are read
-            "-cs": "0.08",  # Use a smaller buffer to shuffle the chunks
-            "-sv": "1",     # Shuffle the videos
-            "-gcp": "0"     # Remove parallelism from chunk creation
-        }
+        # We're already under 64GB when training with the normalized ResNet
+        # features, so no tweaking is needed here.
+        RESNET_NORMALIZED_FEATURE_NAME: {}
     }
 }
 ENVIRONMENT_VARIABLES_REDUCE_MEMORY = {
