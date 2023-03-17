@@ -25,6 +25,19 @@ calls below. These arguments are optional. If they are not explicitly
 provided, they will default to the values defined in
 [bin/command_user_constants.py](bin/command_user_constants.py).
 
+### Low memory setup
+
+We recommend having 256GB of CPU memory available in general, though our
+code can also be tweaked to work with only 64GB. In order to experiment
+with a 64GB setup, set `MEMORY_SETUP = MEMORY_SETUP_64GB` in
+[bin/command_user_constants.py](bin/command_user_constants.py),
+or pass `memory_setup=MEMORY_SETUP_64GB` as an extra input to the
+functions below that involve training models. This low memory
+configuration is still experimental and is significantly slower than our
+standard setup. It also does less shuffling of the input samples, which
+could affect its results, though in our initial experiments we have not
+noticed any detriment.
+
 ## Experiments
 
 The nomenclature used below in the description of the experiments follows the
@@ -64,11 +77,15 @@ The
 [paper related to our challenge submissions](https://arxiv.org/abs/2206.07846) includes
 some results using the Test protocol in order to help explain the improvements obtained
 relative to our [previous paper](https://arxiv.org/abs/2205.10450), which introduced
-the action spotting approach using dense detection anchors.
+our action spotting approach that uses dense detection anchors.
 
 ### Feature pre-processing
 
-Feature pre-processing is required for the later commands.
+Feature pre-processing is required in order to run the later commands.
+
+All the commands below assume that you have already run the
+[setup](README.md#setup) steps. You should then be able to open a Python
+terminal and run the following commands.
 
 ```python
 from bin.spotting_challenge_commands import \

@@ -2,6 +2,7 @@
 # Licensed under the Apache License, Version 2.0.
 # See the accompanying LICENSE file for terms.
 
+import os
 import subprocess
 from typing import Dict, List, Union, Optional
 
@@ -38,21 +39,38 @@ class Command:
 
     def __init__(
             self, description: str, executable: str, arguments: Args,
-            cwd: Optional[str] = None) -> None:
+            cwd: Optional[str] = None,
+            env_vars: Optional[Dict[str, str]] = None) -> None:
         self.description = description
         self.executable = executable
         self.arguments = arguments
         self.cwd = cwd
+        # Make sure self.env_vars is a dictionary, to simplify the code later.
+        if env_vars is None:
+            self.env_vars = {}
+        else:
+            self.env_vars = env_vars
 
     def run(self) -> subprocess.CompletedProcess:
-        command_as_list = self._as_list()
         print(f"Going to run the following command: {self.description}")
-        print(" ".join(command_as_list))
-        return subprocess.run(command_as_list, cwd=self.cwd)
+        print(self.command_line_str())
+        env = {**os.environ, **self.env_vars}
+        return subprocess.run(self._as_list(), cwd=self.cwd, env=env)
+
+    def command_line_str(self) -> str:
+        return (self.environment_variables_str() +
+                " " +
+                " ".join(self._as_list()))
+
+    def environment_variables_str(self) -> str:
+        variables_list = [
+            f"{key}={value}"
+            for key, value in self.env_vars.items()
+        ]
+        return " ".join(variables_list)
 
     def __str__(self) -> str:
-        command_as_str = " ".join(self._as_list())
-        complete_str = f"Command: {self.description}\n{command_as_str}"
+        complete_str = f"Command: {self.description}\n{self.command_line_str()}"
         if self.cwd:
             complete_str = complete_str + f"\nCWD: {self.cwd}"
         return complete_str

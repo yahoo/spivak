@@ -104,7 +104,8 @@ def create_evaluation(
     last_model_path = os.path.join(model_dir, LAST_MODEL_DIR)
     # So that validation isn't so slow, it has its own chunk prediction border.
     predictor = load_predictor_from_model_path(
-        args, last_model_path, label_maps, args.validation_chunk_prediction_border)
+        args, last_model_path, label_maps,
+        args.validation_chunk_prediction_border)
     evaluation = _run_evaluation(args, predictor, label_maps)
     evaluation_run = EvaluationRun(evaluation, args)
     # Get the path for saving the latest validation result. For consistency
