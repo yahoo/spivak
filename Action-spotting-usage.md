@@ -1,5 +1,9 @@
 After you have finished the basic [setup](README.md#setup) steps, you can train and
-test action spotting models using the commands below. The commands below are meant to
+test action spotting models using the commands below. In particular, you must have
+created a particular set of folders and set the environment variables that point to
+them, as explained [within the README](README.md#set-up-some-folders).
+
+The commands below are meant to
 give you a general idea of how to use the package. If you are specifically interested
 in reproducing results from our experiments, please see
 [Reproducing-results-from-the-SoccerNet-action-spotting-challenge-2022.md](Reproducing-results-from-the-SoccerNet-action-spotting-challenge-2022.md).

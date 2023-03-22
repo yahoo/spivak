@@ -8,6 +8,7 @@ from setuptools import setup, find_namespace_packages
 
 SCRIPTS_DIR = "bin"
 PACKAGE_DIR = "spivak"
+PYTHON_REQUIRES = ">=3.6"
 # TODO: make the version requirements into ranges.
 INSTALL_REQUIRES = [
     "numpy~=1.18.5",
@@ -21,6 +22,7 @@ INSTALL_REQUIRES = [
     # so if you are not interested in using the models, you probably
     # don't really have to install TensorFlow.
     "tensorflow~=2.3.0",
+    "tensorboard~=2.7.0",
     # This version of tensorflow_probability should be compatible with
     # Tensorflow 2.3.
     "tensorflow_probability~=0.11.1",
@@ -49,6 +51,7 @@ scripts = glob.glob(os.path.join(SCRIPTS_DIR, "*.py"))
 setup(
     name=PACKAGE_DIR,
     packages=packages,
+    python_requires=PYTHON_REQUIRES,
     install_requires=INSTALL_REQUIRES,
     scripts=scripts,
 )

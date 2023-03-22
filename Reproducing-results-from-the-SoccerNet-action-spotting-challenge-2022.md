@@ -15,7 +15,12 @@ In MMSports, 2022.
 ## Setup
 
 The instructions below assume that you have already set up the package
-and SoccerNet data, as described in the [README](README.md#setup).
+and SoccerNet data, as described in the [README](README.md#setup). You
+should then be able to open a Python terminal and run the commands.
+They all require importing
+`bin.spotting_challenge_commands`, which maps to the
+[bin/spotting_challenge_commands.py](bin/spotting_challenge_commands.py)
+file.
 
 In order to run the commands below, you will need to define several
 paths. For your convenience, you can define them all in the
@@ -82,10 +87,6 @@ our action spotting approach that uses dense detection anchors.
 ### Feature pre-processing
 
 Feature pre-processing is required in order to run the later commands.
-
-All the commands below assume that you have already run the
-[setup](README.md#setup) steps. You should then be able to open a Python
-terminal and run the following commands.
 
 ```python
 from bin.spotting_challenge_commands import \
