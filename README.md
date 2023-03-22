@@ -86,9 +86,9 @@ you will also need to get the
 The low-resolution version of the videos should be enough for
 visualization purposes.
 
-### Optionally, set up some convenient folders
+### Set up some folders
 
-In order to make it easier to follow our guides, we suggest that you create some
+In order to follow our guides, please create
 folders to store your models and results, as follows.
 
 ```bash
@@ -106,7 +106,7 @@ FEATURES_DIR="data/features"
 mkdir -p $FEATURES_DIR
 ```
 
-We also recommend that you create the symbolic links described below, so
+Please also create the symbolic links described below, so
 that you can easily access the downloaded SoccerNet data. The symbolic links
 will point from the [data/](data) folder to the folders containing the actual
 downloaded data.
