@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-
 # Copyright 2023, Yahoo Inc.
 # Licensed under the Apache License, Version 2.0.
 # See the accompanying LICENSE file for terms.
@@ -10,7 +9,7 @@ from spivak.application.argument_parser import get_args, SharedArgs
 from spivak.application.worker_manager import manager_function, Manager
 
 
-def main():
+def main() -> None:
     # Due to a memory leak in Keras, we compute our custom validation metric
     # (average-mAP) in a separate process. In contrast, the validation loss is
     # still computed within Keras, which might leak some memory as well,
@@ -33,7 +32,7 @@ def main():
     manager.process.join()
 
 
-def _create_manager():
+def _create_manager() -> Manager:
     input_queue = Queue()
     output_queue = Queue()
     manager_process = Process(

@@ -24,7 +24,7 @@ from spivak.application.dataset_creation import create_label_maps, \
     create_datasets
 from spivak.application.model_creation import load_or_create_trainer
 from spivak.application.validation import LAST_MODEL_DIR, ValidationResult, \
-    KERAS_GENERIC_UTILS
+    filter_keras_warnings
 from spivak.application.worker_manager import Manager, ChildTask
 from spivak.data.dataset_splits import SPLIT_KEY_TRAIN, SPLIT_KEY_VALIDATION
 from spivak.models.trainer import TrainerInterface
@@ -58,7 +58,7 @@ def train(args: SharedArgs, manager: Manager) -> None:
     # Set logging levels
     tf.compat.v1.logging.set_verbosity(tf.compat.v1.logging.WARN)
     logging.getLogger().setLevel(logging.INFO)
-    warnings.filterwarnings(action="ignore", module=KERAS_GENERIC_UTILS)
+    filter_keras_warnings()
     _set_mixed_precision(bool(args.mixed_precision))
     # Load the datasets
     logging.info("Preparing datasets")

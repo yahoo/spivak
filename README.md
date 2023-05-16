@@ -31,12 +31,13 @@ In MMSports, 2022.
 ### Requirements
 
 Our models depend on TensorFlow, though this package also includes
-evaluation and visualization code that does not. We've currently
-only tested our code using TensorFlow 2.3.0, which is thus currently
-specified in the [setup.py](setup.py) file. Some visualization
+some evaluation and visualization code which does not. We've currently
+only tested our code using TensorFlow 2.3.0 and 2.7.0, thus the
+corresponding range is currently specified in the
+[setup.py](setup.py) file. Certain visualization
 scripts depend on ffmpeg via PyAV (`av` pip package). The rest of
 the dependencies are specified in [setup.py](setup.py) and can
-likely be directly installed using pip as above.
+likely be directly installed using pip as described below.
 
 For the heavier sets of features, our standard flow assumes that a good
 amount of CPU RAM is available. We recommend having 256GB or more
@@ -44,22 +45,29 @@ in order to make things simpler. Our input data pipeline is
 responsible for consuming most of the CPU memory and can be tweaked to
 consume less at the cost of speed. An example of how to do this is
 presented in
-[one of our guides](Reproducing-results-from-the-SoccerNet-action-spotting-challenge-2022.md#low-memory-configuration).
+[one of our guides](Reproducing-results-from-the-SoccerNet-action-spotting-challenge-2022.md#low-memory-setup).
 The code implementing the input data pipeline is in
 [tf_dataset.py](spivak/models/tf_dataset.py), and is based on
 [tf.data](https://www.tensorflow.org/guide/data).
 
 ### Install
 
-If you do not have `ffmpeg` installed, please edit [setup.py](setup.py)
-and comment out the line with `av`. Then, run pip install in order
-to do a local development install, as follows. After successful installation,
-you should see the message `Successfully installed spivak`.
+Run pip install in order to do a local development install, as follows.
+After successful installation, you should see the message
+`Successfully installed spivak`.
 
 ```bash
 BASE_CODE_DIR="YOUR_BASE_CODE_DIR"  # Wherever the spivak repo is located.
 cd $BASE_CODE_DIR/spivak  # The root folder, which contains setup.py.
 pip install -e .
+```
+
+If you have `ffmpeg` installed, you can also run the video visualization
+scripts from our package. In that case, you can run the installation with
+the following command, which will also install the PyAV package:
+
+```bash
+pip install -e .[av]
 ```
 
 ### Get the SoccerNet data
