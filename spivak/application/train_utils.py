@@ -7,7 +7,6 @@ import gc
 import logging
 import os
 import pickle
-import warnings
 from typing import Dict, Any, Optional
 
 import tensorflow as tf
@@ -55,7 +54,10 @@ def train(args: SharedArgs, manager: Manager) -> None:
             f"save_epochs argument should be at least {MIN_SAVE_EPOCHS} in "
             f"order to give time for the validation process to read the last "
             f"model, before overwriting it.")
-    # Set logging levels
+    # Set logging levels. In TensorFlow 2.7, setting TF_CPP_MIN_LOG_LEVEL
+    # here overrides the setting that was done when
+    # spivak.application.validation was imported.
+    os.environ["TF_CPP_MIN_LOG_LEVEL"] = "0"
     tf.compat.v1.logging.set_verbosity(tf.compat.v1.logging.WARN)
     logging.getLogger().setLevel(logging.INFO)
     filter_keras_warnings()
