@@ -61,6 +61,11 @@ def train(args: SharedArgs, manager: Manager) -> None:
     tf.compat.v1.logging.set_verbosity(tf.compat.v1.logging.WARN)
     logging.getLogger().setLevel(logging.INFO)
     filter_keras_warnings()
+    # In TensorFlow 2.7.0, for some reason training will take a very long
+    # time to start when the feature dimension is not small, and will just
+    # stall forever when it is large. By setting TF_CUDNN_USE_AUTOTUNE=0, we
+    # avoid that issue, probably at the cost of performance.
+    os.environ["TF_CUDNN_USE_AUTOTUNE"] = "0"
     _set_mixed_precision(bool(args.mixed_precision))
     # Load the datasets
     logging.info("Preparing datasets")
