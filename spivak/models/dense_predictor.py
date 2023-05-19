@@ -122,15 +122,14 @@ class DensePredictor(PredictorInterface):
             valid_chunk_sizes: List[int]) -> List[List[np.ndarray]]:
         # predict_on_batch() seems to be safer than predict() relating to memory
         # leak issues: https://github.com/keras-team/keras/issues/13118.
-        # However, it might require more GPU memory, so let's try to just use
-        # the regular predict, which creates the batches under the hood.
+        # Unfortunately, it might require more total GPU memory. In spite of
+        # that, we're using it here, since when using predict(), we would run
+        # out of memory when running prediction on the Combination x 2 (
+        # baidu_2.0) features with TensorFlow 2.7.0.
         if self._profile:
             logging.error(f"input_chunk_batch.shape: {input_chunk_batch.shape}")
-            verbose = 1
-        else:
-            verbose = 0
-        all_head_chunk_output_batch = self._model.predict(
-            input_chunk_batch, verbose=verbose)
+        all_head_chunk_output_batch = self._model.predict_on_batch(
+            input_chunk_batch)
         if len(self._predictor_heads) == 1:
             all_head_chunk_output_batch = [all_head_chunk_output_batch]
         # Postprocess the result.

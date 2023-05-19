@@ -38,7 +38,7 @@ KEY_LABEL = "label"
 KEY_POSITION = "position"
 KEY_HALF = "half"
 KEY_CONFIDENCE = "confidence"
-# These is for reading and writing into JSON files.
+# These are for reading and writing into JSON files.
 HALF_ONE = 1
 HALF_TWO = 2
 # These are for file naming
