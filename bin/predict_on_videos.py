@@ -27,6 +27,7 @@ class Args:
     FEATURES = "features"
     CONFIG_DIR = "config_dir"
     SPLITS_DIR = "splits_dir"
+    TEST_SAVE_SPOTTING_JSONS = "test_save_spotting_jsons"
 
 
 def main() -> None:
@@ -59,6 +60,7 @@ def main() -> None:
         shared_args.dataset_type)
     shared_args.labels_dir = args[Args.LABELS_DIR]
     shared_args.splits_dir = args[Args.SPLITS_DIR]
+    shared_args.test_save_spotting_jsons = args[Args.TEST_SAVE_SPOTTING_JSONS]
     shared_args.test_split = SPLIT_KEY_UNLABELED
     # Don't run evaluation, just prediction.
     shared_args.evaluate = 0
@@ -94,6 +96,10 @@ def _get_command_line_arguments() -> Dict:
         "--" + Args.FEATURES, required=False,
         help="What type of features to use", default=EXTRACTOR_TYPE_RESNET_TF2,
         choices=[EXTRACTOR_TYPE_RESNET_TF2])
+    parser.add_argument(
+        "--" + Args.TEST_SAVE_SPOTTING_JSONS, required=False,
+        help="Whether to convert the results to JSON format after prediction",
+        type=int, default=0, choices=[0, 1])
     args_dict = vars(parser.parse_args())
     return args_dict
 

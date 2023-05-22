@@ -13,7 +13,8 @@ from spivak.application.argument_parser import SharedArgs, dir_str_to_path, \
     DATASET_TYPE_SOCCERNET_V2_CAMERA_SEGMENTATION, DATASET_TYPE_SOCCERNET_V2, \
     DATASET_TYPE_SOCCERNET_V2_CHALLENGE_VALIDATION, \
     DATASET_TYPE_SOCCERNET_V2_CHALLENGE, DATASET_TYPE_SOCCERNET, \
-    DATASET_TYPE_CUSTOM_SPOTTING_AND_SEGMENTATION
+    DATASET_TYPE_CUSTOM_SPOTTING_AND_SEGMENTATION, \
+    DATASET_TYPE_SOCCERNET_V2_SPOTTING_AND_CAMERA_SEGMENTATION
 from spivak.application.dataset_creation import create_label_maps, \
     create_dataset
 from spivak.application.model_creation import load_predictor, \
@@ -25,7 +26,8 @@ from spivak.data.dataset_splits import SPLIT_KEY_UNLABELED
 from spivak.data.label_map import LabelMap
 from spivak.data.output_names import OUTPUT_LABEL, OUTPUT_DETECTION_SCORE_NMS, \
     OUTPUT_SEGMENTATION, OUTPUT_DETECTION_SCORE
-from spivak.data.soccernet_label_io import write_all_prediction_jsons
+from spivak.data.soccernet_label_io import \
+    write_all_prediction_jsons_for_games, write_all_prediction_jsons
 from spivak.data.soccernet_reader import GamePathsReader
 from spivak.evaluation.aggregate import EvaluationAggregate
 from spivak.evaluation.segmentation_evaluation import \
@@ -70,14 +72,21 @@ def test(args: SharedArgs) -> None:
             _save_labels(dataset, results_dir)
     if args.evaluate and not split == SPLIT_KEY_UNLABELED:
         _evaluate(args, dataset, label_maps, results_dir)
-    if args.test_save_spotting_jsons and args.dataset_type in {
-            DATASET_TYPE_SOCCERNET_V2,
-            DATASET_TYPE_SOCCERNET_V2_CHALLENGE_VALIDATION,
-            DATASET_TYPE_SOCCERNET_V2_CHALLENGE}:
-        logging.info("Going to convert detections to SoccerNet JSON format.")
-        write_all_prediction_jsons(
-            results_dir, dataset.video_data, label_maps[Task.SPOTTING],
-            args.frame_rate)
+    if args.test_save_spotting_jsons:
+        if args.dataset_type in {
+                DATASET_TYPE_SOCCERNET_V2,
+                DATASET_TYPE_SOCCERNET_V2_CHALLENGE_VALIDATION,
+                DATASET_TYPE_SOCCERNET_V2_CHALLENGE,
+                DATASET_TYPE_SOCCERNET_V2_SPOTTING_AND_CAMERA_SEGMENTATION}:
+            write_all_prediction_jsons_for_games(
+                results_dir, dataset.video_data, label_maps[Task.SPOTTING],
+                args.frame_rate)
+        elif args.dataset_type in {
+                DATASET_TYPE_CUSTOM_SPOTTING,
+                DATASET_TYPE_CUSTOM_SPOTTING_AND_SEGMENTATION}:
+            write_all_prediction_jsons(
+                results_dir, dataset.video_data, label_maps[Task.SPOTTING],
+                args.frame_rate)
 
 
 def _predict_and_save(

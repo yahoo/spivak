@@ -29,6 +29,8 @@ THRESHOLDS = [0.5, 0.7, 0.9]
 # File names
 RESULTS_JSON = "results_spotting.json"
 RESULTS_JSON_THRESHOLDED = "results_spotting_thresholded_%.2f.json"
+RESULTS_EXTENSION_JSON = "_results_spotting.json"
+RESULTS_EXTENSION_JSON_THRESHOLDED = "_results_spotting_thresholded_%.2f.json"
 # JSON keys
 KEY_URL_LOCAL = "UrlLocal"
 KEY_PREDICTIONS = "predictions"
@@ -38,7 +40,7 @@ KEY_LABEL = "label"
 KEY_POSITION = "position"
 KEY_HALF = "half"
 KEY_CONFIDENCE = "confidence"
-# These is for reading and writing into JSON files.
+# These are for reading and writing into JSON files.
 HALF_ONE = 1
 HALF_TWO = 2
 # These are for file naming
@@ -50,14 +52,12 @@ SECONDS_PER_MINUTE = 60
 class GameSpottingPredictionsWriter:
 
     def __init__(
-            self, label_map: LabelMap, frame_rate: float,
-            threshold: float) -> None:
-        self._label_map = label_map
-        self._frame_rate = frame_rate
-        self._threshold = threshold
+            self, predictions_formatter: "SpottingPredictionsFormatter"
+    ) -> None:
+        self._predictions_formatter = predictions_formatter
 
     def write(
-            self, game_path: Path, relative_game_path: Path,
+            self, game_path: Path, relative_game_dir: Path,
             out_path: Path) -> None:
         half_one_path = game_path / PREFIX_HALF_ONE
         half_two_path = game_path / PREFIX_HALF_TWO
@@ -66,17 +66,47 @@ class GameSpottingPredictionsWriter:
         detections_half_two = np.load(
             f"{half_two_path}_{OUTPUT_DETECTION_SCORE_NMS}.npy")
         predictions = (
-            self._create_half_predictions(detections_half_one, HALF_ONE) +
-            self._create_half_predictions(detections_half_two, HALF_TWO)
+            self._predictions_formatter.format(detections_half_one, HALF_ONE) +
+            self._predictions_formatter.format(detections_half_two, HALF_TWO)
         )
         output = {
-            KEY_URL_LOCAL: str(relative_game_path),
+            KEY_URL_LOCAL: str(relative_game_dir),
             KEY_PREDICTIONS: predictions}
         with out_path.open("w") as out_file:
             json.dump(output, out_file)
 
-    def _create_half_predictions(
-            self, detections: np.ndarray, half: int) -> List[Dict]:
+
+class VideoSpottingPredictionsWriter:
+
+    def __init__(
+            self, predictions_formatter: "SpottingPredictionsFormatter"
+    ) -> None:
+        self._predictions_formatter = predictions_formatter
+
+    def write(
+            self, base_path: Path, relative_video_parent_path: Path,
+            out_path: Path) -> None:
+        detections = np.load(
+            f"{base_path}_{OUTPUT_DETECTION_SCORE_NMS}.npy")
+        predictions = self._predictions_formatter.format(detections, None)
+        output = {
+            KEY_URL_LOCAL: str(relative_video_parent_path),
+            KEY_PREDICTIONS: predictions}
+        with out_path.open("w") as out_file:
+            json.dump(output, out_file)
+
+
+class SpottingPredictionsFormatter:
+
+    def __init__(
+            self, label_map: LabelMap, frame_rate: float,
+            threshold: float) -> None:
+        self._label_map = label_map
+        self._frame_rate = frame_rate
+        self._threshold = threshold
+
+    def format(
+            self, detections: np.ndarray, half: Optional[int]) -> List[Dict]:
         # detections will be negative in regions with no detections, and can
         # be zero at certain locations (due to how the NMS works), so it's
         # probably good to keep the >= below.
@@ -85,29 +115,32 @@ class GameSpottingPredictionsWriter:
         # convert them to regular ints below, as the numpy integers behave
         # differently from regular integers in certain operations.
         return [
-            self._create_prediction(
+            self._format_prediction(
                 int(frame_index), int(class_index),
                 detections[frame_index, class_index], half)
             for frame_index, class_index in zip(*detection_locations)
         ]
 
-    def _create_prediction(
+    def _format_prediction(
             self, frame_index: int, class_index: int, confidence: float,
-            half: int) -> Dict[str, Any]:
+            half: Optional[int]) -> Dict[str, Any]:
         label = self._label_map.int_to_label[class_index]
         seconds = frame_index / self._frame_rate
         int_milliseconds = round(seconds * 1000.0)
         int_seconds = round(seconds)
         clock_minutes = int_seconds // SECONDS_PER_MINUTE
         clock_seconds = int_seconds - SECONDS_PER_MINUTE * clock_minutes
-        game_time = f"{half} - {clock_minutes}:{clock_seconds:02d}"
-        return {
-            KEY_GAME_TIME: game_time,
-            KEY_HALF: str(half),
+        prediction = {
             KEY_POSITION: str(int_milliseconds),
             KEY_LABEL: label,
             KEY_CONFIDENCE: str(confidence)
         }
+        game_time = f"{clock_minutes}:{clock_seconds:02d}"
+        if half is not None:
+            game_time = f"{half} - {game_time}"
+            prediction[KEY_HALF] = str(half)
+        prediction[KEY_GAME_TIME] = game_time
+        return prediction
 
 
 class GameSpottingPredictionsReader:
@@ -140,18 +173,34 @@ def choose_spotting_event_dictionary(soccernet_type: str) -> Dict[str, int]:
         raise ValueError(f"Unknown soccernet type: {soccernet_type}")
 
 
-def write_all_prediction_jsons(
+def write_all_prediction_jsons_for_games(
         save_path: Path, video_data: List[VideoDatum],
         label_map: LabelMap, frame_rate: float) -> None:
     game_writer = GameSpottingPredictionsWriter(
-        label_map, frame_rate, THRESHOLD_ZERO)
-    _write_prediction_jsons(game_writer, save_path, RESULTS_JSON, video_data)
+        SpottingPredictionsFormatter(label_map, frame_rate, THRESHOLD_ZERO))
+    _write_prediction_jsons_for_games(
+        game_writer, save_path, RESULTS_JSON, video_data)
     for threshold in THRESHOLDS:
         results_filename = RESULTS_JSON_THRESHOLDED % threshold
         game_writer_thresholded = GameSpottingPredictionsWriter(
-            label_map, frame_rate, threshold)
-        _write_prediction_jsons(
+            SpottingPredictionsFormatter(label_map, frame_rate, threshold))
+        _write_prediction_jsons_for_games(
             game_writer_thresholded, save_path, results_filename, video_data)
+
+
+def write_all_prediction_jsons(
+        save_path: Path, video_data: List[VideoDatum],
+        label_map: LabelMap, frame_rate: float) -> None:
+    video_writer = VideoSpottingPredictionsWriter(
+        SpottingPredictionsFormatter(label_map, frame_rate, THRESHOLD_ZERO))
+    _write_prediction_jsons(
+        video_writer, save_path, RESULTS_EXTENSION_JSON, video_data)
+    for threshold in THRESHOLDS:
+        results_filename = RESULTS_EXTENSION_JSON_THRESHOLDED % threshold
+        video_writer_thresholded = VideoSpottingPredictionsWriter(
+            SpottingPredictionsFormatter(label_map, frame_rate, threshold))
+        _write_prediction_jsons(
+            video_writer_thresholded, save_path, results_filename, video_data)
 
 
 def read_game_predictions(
@@ -294,13 +343,23 @@ def _frame_index_from_position(position: int, frame_rate: float) -> int:
     return round(frame_rate * position / 1000.0)
 
 
-def _write_prediction_jsons(
+def _write_prediction_jsons_for_games(
         game_writer: GameSpottingPredictionsWriter, save_path: Path,
         results_filename: str, video_data: List[VideoDatum]) -> None:
     # Get the directory containing each game
-    relative_game_paths = {
+    relative_game_dirs = {
         video_datum.relative_path.parent for video_datum in video_data}
-    for relative_game_path in tqdm(relative_game_paths):
-        game_path = save_path / relative_game_path
+    for relative_game_dir in tqdm(relative_game_dirs):
+        game_path = save_path / relative_game_dir
         out_path = game_path / results_filename
-        game_writer.write(game_path, relative_game_path, out_path)
+        game_writer.write(game_path, relative_game_dir, out_path)
+
+
+def _write_prediction_jsons(
+        video_writer: VideoSpottingPredictionsWriter, save_path: Path,
+        results_extension: str, video_data: List[VideoDatum]) -> None:
+    for video_datum in tqdm(video_data):
+        base_path = save_path / video_datum.relative_path
+        out_path = base_path.parent / f"{base_path.name}{results_extension}"
+        relative_video_parent_path = video_datum.relative_path.parent
+        video_writer.write(base_path, relative_video_parent_path, out_path)
