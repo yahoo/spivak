@@ -133,21 +133,32 @@ baidu_two_challenge_commands = commands_spotting_challenge(
 print_commands(baidu_two_challenge_commands)
 ```
 
-<!--
-
 #### Test protocol
 
-Within this experiment on the Test protocol, we vary the type of non-maximum
-suppression (NMS) used during post-processing. There are three NMS strategies
-used:
+In most of our experiments, we apply soft non-maximum suppression (Soft-NMS)
+as the post-processing step. However, within this particular experiment
+using the Test protocol, we vary the type of non-maximum suppression (NMS)
+used during post-processing. We experiment with three NMS strategies:
 
-- Soft-NMS (with a window size optimized to maximize tight
+- Soft-NMS (with a window size that was optimized to maximize tight
 average-mAP on the validation set)
-- Regular NMS (also with a window size optimized to maximize tight
-average-mAP on the validation set)
+- Regular NMS (also with a window size that was optimized to maximize
+tight average-mAP on the validation set)
 - Regular NMS with a window size of 20 seconds
 
--->
+The commands for experimenting with different NMS approaches are generated
+by supplying the `do_nms_comparison=True` flag to the `commands_spotting_test`
+function, which generates the list of commands, as shown below.
+
+```python
+from bin.spotting_challenge_commands import \
+    commands_spotting_test, print_commands, BAIDU_TWO_FEATURE_NAME, \
+    BAIDU_TWO_FEATURES_DIR
+
+baidu_two_test_commands = commands_spotting_test(
+    BAIDU_TWO_FEATURES_DIR, BAIDU_TWO_FEATURE_NAME, do_nms_comparison=True)
+print_commands(baidu_two_test_commands)
+```
 
 ### Experiments using ResNet features
 
@@ -176,6 +187,18 @@ resnet_normalized_challenge_commands = commands_spotting_challenge(
 print_commands(resnet_normalized_challenge_commands)
 ```
 
+#### Test protocol
+
+```python
+from bin.spotting_challenge_commands import \
+    commands_spotting_test, print_commands, \
+    RESNET_NORMALIZED_FEATURE_NAME, RESNET_NORMALIZED_FEATURES_DIR
+
+resnet_normalized_test_commands = commands_spotting_test(
+    RESNET_NORMALIZED_FEATURES_DIR, RESNET_NORMALIZED_FEATURE_NAME)
+print_commands(resnet_normalized_test_commands)
+```
+
 ### Experiments using Combination×2 + ResNet features
 
 This section's models are expected to bring only a minor improvement relative
@@ -199,8 +222,9 @@ then run the commands below for the Challenge protocol
 #### Challenge Validated protocol
 
 Assuming you have already produced the confidence scores for the Combination×2
-and ResNet features using the commands from previous sections, you can combine
-them using our weighted averaging approach with the commands below.
+and ResNet features with the Challenge Validated protocol (using the commands
+from previous sections), you can combine them using our weighted averaging
+approach with the commands below.
 
 ```python
 from bin.spotting_challenge_commands import \
@@ -214,8 +238,9 @@ print_commands(fusion_challenge_validated_commands)
 #### Challenge protocol
 
 Once you have trained the averaging model using the Challenge Validated protocol,
-and also produced the confidence scores on the Combination×2 and ResNet features,
-you can combine them using our averaging approach with the commands below.
+and also produced the confidence scores on the Combination×2 and ResNet features
+using the commands from previous sections for the Challenge protocol, then you
+can combine them using our averaging approach with the commands below.
 
 ```python
 from bin.spotting_challenge_commands import \
@@ -225,12 +250,24 @@ fusion_challenge_commands = commands_spotting_challenge_fusion()
 print_commands(fusion_challenge_commands)
 ```
 
-<!--
 #### Test protocol
--->
+
+In order to run the feature fusion experiment commands below, you should have
+first run the Test protocol experiments above, so that the confidence scores
+produced using the Combination×2 and ResNet features are available to serve
+as inputs to the fusion.
+
+```python
+from bin.spotting_challenge_commands import \
+    commands_spotting_test_fusion, print_commands
+
+fusion_test_commands = commands_spotting_test_fusion()
+print_commands(fusion_test_commands)
+```
 
 ### Experiments using Combination features
 
-For experiments that directly use the original Baidu Combination
-features (without resampling to 2.0 frames per second as above), see:
+We've done a set of experiments using the Test protocol where we directly
+use the original Baidu Combination features (without resampling to 2.0
+frames per second as above). In order to reproduce those, see
 [Reproducing-results-from-our-ICIP-2022-paper.md](Reproducing-results-from-our-ICIP-2022-paper.md)

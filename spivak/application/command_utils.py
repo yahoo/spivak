@@ -19,9 +19,9 @@ SCRIPT_CREATE_AVERAGING_PREDICTOR = "./bin/create_averaging_predictor.py"
 # System executables
 EXECUTABLE_ZIP = "zip"
 # Protocol names, used only for creating directory names
+SPOTTING_TEST = "spotting_test"
 SPOTTING_CHALLENGE = "spotting_challenge"
 SPOTTING_CHALLENGE_VALIDATED = "spotting_challenge_validated"
-SPOTTING_TEST = "spotting_test"
 # Config folders
 CONFIG_DIR_CHALLENGE_CONFIDENCE = "soccernet_challenge_confidence"
 CONFIG_DIR_CHALLENGE_DELTA = "soccernet_challenge_delta"
