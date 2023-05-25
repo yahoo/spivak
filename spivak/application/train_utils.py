@@ -7,7 +7,6 @@ import gc
 import logging
 import os
 import pickle
-import warnings
 from typing import Dict, Any, Optional
 
 import tensorflow as tf
@@ -24,7 +23,7 @@ from spivak.application.dataset_creation import create_label_maps, \
     create_datasets
 from spivak.application.model_creation import load_or_create_trainer
 from spivak.application.validation import LAST_MODEL_DIR, ValidationResult, \
-    KERAS_GENERIC_UTILS
+    filter_keras_warnings
 from spivak.application.worker_manager import Manager, ChildTask
 from spivak.data.dataset_splits import SPLIT_KEY_TRAIN, SPLIT_KEY_VALIDATION
 from spivak.models.trainer import TrainerInterface
@@ -55,10 +54,18 @@ def train(args: SharedArgs, manager: Manager) -> None:
             f"save_epochs argument should be at least {MIN_SAVE_EPOCHS} in "
             f"order to give time for the validation process to read the last "
             f"model, before overwriting it.")
-    # Set logging levels
+    # Set logging levels. In TensorFlow 2.7, setting TF_CPP_MIN_LOG_LEVEL
+    # here overrides the setting that was done when
+    # spivak.application.validation was imported.
+    os.environ["TF_CPP_MIN_LOG_LEVEL"] = "0"
     tf.compat.v1.logging.set_verbosity(tf.compat.v1.logging.WARN)
     logging.getLogger().setLevel(logging.INFO)
-    warnings.filterwarnings(action="ignore", module=KERAS_GENERIC_UTILS)
+    filter_keras_warnings()
+    # In TensorFlow 2.7.0, for some reason training will take a very long
+    # time to start when the feature dimension is not small, and will just
+    # stall forever when it is large. By setting TF_CUDNN_USE_AUTOTUNE=0, we
+    # avoid that issue, probably at the cost of performance.
+    os.environ["TF_CUDNN_USE_AUTOTUNE"] = "0"
     _set_mixed_precision(bool(args.mixed_precision))
     # Load the datasets
     logging.info("Preparing datasets")

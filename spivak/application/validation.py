@@ -48,8 +48,11 @@ EVALUATION_RUN_PICKLE_FILE_NAME = "evaluation_run.pkl"
 LAST_MODEL_DIR = "last_model"
 BEST_MODEL_DIR = "best_model"
 
-KERAS_GENERIC_UTILS = "keras.utils.generic_utils"
-KERAS_ENGINE_TRAINING = "keras.engine.training"
+MODULE_KERAS_GENERIC_UTILS = "keras.utils.generic_utils"
+MODULE_KERAS_ENGINE_TRAINING = "keras.engine.training"
+MODULE_KERAS_ENGINE_FUNCTIONAL = "keras.engine.functional"
+MODULE_KERAS_LAYER_SERIALIZATION = \
+    "keras.saving.saved_model.layer_serialization"
 
 
 class EvaluationRun:
@@ -71,15 +74,25 @@ class ValidationResult:
 def compute_validation_result(args, best_metric, epoch):
     tf.compat.v1.logging.set_verbosity(tf.compat.v1.logging.FATAL)
     logging.getLogger().setLevel(logging.INFO)
-    warnings.filterwarnings(action="ignore", module=KERAS_GENERIC_UTILS)
-    warnings.filterwarnings(
-        action="ignore", category=UserWarning, module=KERAS_ENGINE_TRAINING)
+    filter_keras_warnings()
     # disable_eager_execution makes inference a lot faster. Note this has to be
     # set inside the function, so that it doesn't affect any module that
     # imports this file.
     tf.compat.v1.disable_eager_execution()
     evaluation = create_evaluation(args, best_metric)
     return ValidationResult(evaluation, epoch)
+
+
+def filter_keras_warnings() -> None:
+    warnings.filterwarnings(
+        action="ignore", module=MODULE_KERAS_GENERIC_UTILS)
+    warnings.filterwarnings(
+        action="ignore", module=MODULE_KERAS_ENGINE_FUNCTIONAL)
+    warnings.filterwarnings(
+        action="ignore", module=MODULE_KERAS_LAYER_SERIALIZATION)
+    warnings.filterwarnings(
+        action="ignore", category=UserWarning,
+        module=MODULE_KERAS_ENGINE_TRAINING)
 
 
 def save_evaluation_run(evaluation_run: EvaluationRun, save_dir: str) -> None:

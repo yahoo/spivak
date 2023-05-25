@@ -2,7 +2,6 @@
 # Licensed under the Apache License, Version 2.0.
 # See the accompanying LICENSE file for terms.
 
-import time
 from heapq import heappush, heappop
 from typing import Optional, Callable
 
@@ -214,13 +213,6 @@ def add_canvas_border(
     extra_height = (canvas_image_size.height - np_image.shape[0])
     return cv2.copyMakeBorder(np_image, 0, extra_height, 0, 0,
                               cv2.BORDER_CONSTANT, 0)
-
-
-def run_timed(a_function: Callable[[], None]) -> None:
-    start = time.time()
-    a_function()
-    end = time.time()
-    print(f"Elapsed time: {end - start}")
 
 
 def _create_filters(

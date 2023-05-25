@@ -3,8 +3,11 @@
 # See the accompanying LICENSE file for terms.
 
 import logging
+import warnings
 from multiprocessing import Queue, Process
 from typing import Callable, Optional, Tuple
+
+MODULE_ADDONS_INSTALL = "tensorflow_addons.utils.ensure_tf_install"
 
 
 class Manager:
@@ -17,17 +20,20 @@ class Manager:
 
 class ChildTask:
 
-    def __init__(self, do_exit: bool, args: Optional[Tuple]):
+    def __init__(self, do_exit: bool, args: Optional[Tuple]) -> None:
         self.do_exit = do_exit
         self.args = args
 
 
 def manager_function(
-        input_queue: Queue, output_queue: Queue, worker_function: Callable):
+        input_queue: Queue, output_queue: Queue,
+        worker_function: Callable) -> None:
     # I tried also doing this with a pool (setting maxtasksperchild to 1),
     # but for some unknown reason it would sometimes not work (maybe a
     # deadlock), but I didn't investigate to understand why.
     logging.getLogger().setLevel(logging.ERROR)
+    warnings.filterwarnings(
+        action="ignore", category=UserWarning, module=MODULE_ADDONS_INSTALL)
     logging.info("MANAGER: initializing")
     worker_result_queue = Queue()
 

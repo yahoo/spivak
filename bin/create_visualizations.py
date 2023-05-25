@@ -6,12 +6,11 @@
 
 import argparse
 import shutil
+import time
 from pathlib import Path
-from typing import Dict, Optional, List, TextIO
+from typing import Callable, Dict, Optional, List, TextIO
 
-import av
 import numpy as np
-from av.video.frame import VideoFrame
 from pandas import DataFrame
 
 from spivak.data.label_map import LabelMap
@@ -29,9 +28,6 @@ from spivak.html_visualization.utils import add_video, add_click_code, \
     create_category_settings, create_custom_category_settings, ColorMapChoice
 from spivak.video_visualization.recognition_visualization import \
     FrameRecognizedActionsView, cv2_draw_labels, get_multi_labels, Label
-from spivak.video_visualization.video_drawing import \
-    create_video_from_containers, TransformationSizes, apply_draw_to_av_frame, \
-    add_canvas_border, run_timed
 
 INDEX_HTML = "index.html"
 SPOTTING_HTML = "spotting.html"
@@ -150,7 +146,7 @@ def _coarsen_video_recognized_actions(
         for start in range(0, len(action_times), COARSE_ACTIONS_CHUNK_SIZE)]
     return {
         np.mean(time_chunk): _max_recognized_action(
-            [video_recognized_actions[time] for time in time_chunk])
+            [video_recognized_actions[t] for t in time_chunk])
         for time_chunk in time_chunks}
 
 
@@ -207,13 +203,26 @@ def _run_timed_create_a_video(
         _create_video(
             in_video_path, out_video_path, video_recognized_actions,
             recognition_label_map)
-    run_timed(create_a_video)
+    _run_timed(create_a_video)
+
+
+def _run_timed(a_function: Callable[[], None]) -> None:
+    start = time.time()
+    a_function()
+    end = time.time()
+    print(f"Elapsed time: {end - start}")
 
 
 def _create_video(
         in_video_path: str, out_video_path: str,
         video_recognized_actions: VideoSoccerRecognizedActions,
         recognition_label_map: LabelMap) -> None:
+    import av
+    from av.video.frame import VideoFrame
+
+    from spivak.video_visualization.video_drawing import \
+        create_video_from_containers, TransformationSizes, \
+        apply_draw_to_av_frame, add_canvas_border
 
     def get_frame_labels(frame_time: float) -> Optional[List[Label]]:
         frame_actions_view = _get_frame_recognized_actions_view_from_video(
