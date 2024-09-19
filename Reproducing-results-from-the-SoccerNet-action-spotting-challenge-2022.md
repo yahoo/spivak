@@ -30,6 +30,22 @@ calls below. These arguments are optional. If they are not explicitly
 provided, they will default to the values defined in
 [bin/command_user_constants.py](bin/command_user_constants.py).
 
+### Model zoo
+
+You can skip the model training steps by downloading models from [our
+model zoo](https://huggingface.co/yahoo-inc/spivak-action-spotting-soccernet).
+Since there are several models, we suggest downloading all of them at once using:
+```
+git clone https://huggingface.co/yahoo-inc/spivak-action-spotting-soccernet  # requires git lfs
+```
+The instructions below include commands for either training the models
+from scratch or for directly running inference and
+evaluation using models downloaded from the zoo. If you would like to use
+the models from the zoo, the instructions assume
+that you have downloaded them into the models folder that is specified within
+[bin/command_user_constants.py](bin/command_user_constants.py), which
+defaults to `YOUR_MODELS_DIR`.
+
 ### Low memory setup
 
 We recommend having 256GB of CPU memory available in general, though our
@@ -110,11 +126,19 @@ print_commands(normalize_commands)
 ```python
 from bin.spotting_challenge_commands import \
     commands_spotting_challenge_validated, print_commands, \
-    BAIDU_TWO_FEATURE_NAME, BAIDU_TWO_FEATURES_DIR
+    BAIDU_TWO_FEATURE_NAME, BAIDU_TWO_FEATURES_DIR, RUN_NAME_ZOO
 
+# Commands for running both training and testing:
 baidu_two_challenge_validated_commands = commands_spotting_challenge_validated(
     BAIDU_TWO_FEATURES_DIR, BAIDU_TWO_FEATURE_NAME)
 print_commands(baidu_two_challenge_validated_commands)
+
+# Commands for running just testing with the models from the zoo:
+baidu_two_challenge_validated_commands_zoo = \
+    commands_spotting_challenge_validated(
+        BAIDU_TWO_FEATURES_DIR, BAIDU_TWO_FEATURE_NAME,
+        run_name=RUN_NAME_ZOO, do_train=False)
+print_commands(baidu_two_challenge_validated_commands_zoo)
 ```
 
 #### Challenge protocol
@@ -126,11 +150,18 @@ average-mAP.
 ```python
 from bin.spotting_challenge_commands import \
     commands_spotting_challenge, print_commands, BAIDU_TWO_FEATURE_NAME, \
-    BAIDU_TWO_FEATURES_DIR
+    BAIDU_TWO_FEATURES_DIR, RUN_NAME_ZOO
 
+# Commands for running both training and testing:
 baidu_two_challenge_commands = commands_spotting_challenge(
     BAIDU_TWO_FEATURES_DIR, BAIDU_TWO_FEATURE_NAME)
 print_commands(baidu_two_challenge_commands)
+
+# Commands for running just testing with the models from the zoo:
+baidu_two_challenge_commands_zoo = commands_spotting_challenge(
+    BAIDU_TWO_FEATURES_DIR, BAIDU_TWO_FEATURE_NAME,
+    run_name=RUN_NAME_ZOO, do_train=False)
+print_commands(baidu_two_challenge_commands_zoo)
 ```
 
 #### Test protocol
@@ -153,11 +184,18 @@ function, which generates the list of commands, as shown below.
 ```python
 from bin.spotting_challenge_commands import \
     commands_spotting_test, print_commands, BAIDU_TWO_FEATURE_NAME, \
-    BAIDU_TWO_FEATURES_DIR
+    BAIDU_TWO_FEATURES_DIR, RUN_NAME_ZOO
 
+# Commands for running both training and testing:
 baidu_two_test_commands = commands_spotting_test(
     BAIDU_TWO_FEATURES_DIR, BAIDU_TWO_FEATURE_NAME, do_nms_comparison=True)
 print_commands(baidu_two_test_commands)
+
+# Commands for running just testing with the models from the zoo:
+baidu_two_test_commands_zoo = commands_spotting_test(
+    BAIDU_TWO_FEATURES_DIR, BAIDU_TWO_FEATURE_NAME, do_nms_comparison=True,
+    run_name=RUN_NAME_ZOO, do_train=False)
+print_commands(baidu_two_test_commands_zoo)
 ```
 
 ### Experiments using ResNet features
@@ -167,12 +205,21 @@ print_commands(baidu_two_test_commands)
 ```python
 from bin.spotting_challenge_commands import \
     commands_spotting_challenge_validated, print_commands, \
-    RESNET_NORMALIZED_FEATURE_NAME, RESNET_NORMALIZED_FEATURES_DIR
+    RESNET_NORMALIZED_FEATURE_NAME, RESNET_NORMALIZED_FEATURES_DIR, \
+    RUN_NAME_ZOO
 
+# Commands for running both training and testing:
 resnet_normalized_challenge_validated_commands = \
     commands_spotting_challenge_validated(
         RESNET_NORMALIZED_FEATURES_DIR, RESNET_NORMALIZED_FEATURE_NAME)
 print_commands(resnet_normalized_challenge_validated_commands)
+
+# Commands for running just testing with the models from the zoo:
+resnet_normalized_challenge_validated_commands_zoo = \
+    commands_spotting_challenge_validated(
+        RESNET_NORMALIZED_FEATURES_DIR, RESNET_NORMALIZED_FEATURE_NAME,
+        run_name=RUN_NAME_ZOO, do_train=False)
+print_commands(resnet_normalized_challenge_validated_commands_zoo)
 ```
 
 #### Challenge protocol
@@ -180,11 +227,19 @@ print_commands(resnet_normalized_challenge_validated_commands)
 ```python
 from bin.spotting_challenge_commands import \
     commands_spotting_challenge, print_commands, \
-    RESNET_NORMALIZED_FEATURE_NAME, RESNET_NORMALIZED_FEATURES_DIR
+    RESNET_NORMALIZED_FEATURE_NAME, RESNET_NORMALIZED_FEATURES_DIR, \
+    RUN_NAME_ZOO
 
+# Commands for running both training and testing:
 resnet_normalized_challenge_commands = commands_spotting_challenge(
     RESNET_NORMALIZED_FEATURES_DIR, RESNET_NORMALIZED_FEATURE_NAME)
 print_commands(resnet_normalized_challenge_commands)
+
+# Commands for running just testing with the models from the zoo:
+resnet_normalized_challenge_commands_zoo = commands_spotting_challenge(
+    RESNET_NORMALIZED_FEATURES_DIR, RESNET_NORMALIZED_FEATURE_NAME,
+    run_name=RUN_NAME_ZOO, do_train=False)
+print_commands(resnet_normalized_challenge_commands_zoo)
 ```
 
 #### Test protocol
@@ -192,11 +247,19 @@ print_commands(resnet_normalized_challenge_commands)
 ```python
 from bin.spotting_challenge_commands import \
     commands_spotting_test, print_commands, \
-    RESNET_NORMALIZED_FEATURE_NAME, RESNET_NORMALIZED_FEATURES_DIR
+    RESNET_NORMALIZED_FEATURE_NAME, RESNET_NORMALIZED_FEATURES_DIR, \
+    RUN_NAME_ZOO
 
+# Commands for running both training and testing:
 resnet_normalized_test_commands = commands_spotting_test(
     RESNET_NORMALIZED_FEATURES_DIR, RESNET_NORMALIZED_FEATURE_NAME)
 print_commands(resnet_normalized_test_commands)
+
+# Commands for running just testing with the models from the zoo:
+resnet_normalized_test_commands_zoo = commands_spotting_test(
+    RESNET_NORMALIZED_FEATURES_DIR, RESNET_NORMALIZED_FEATURE_NAME,
+    run_name=RUN_NAME_ZOO, do_train=False)
+print_commands(resnet_normalized_test_commands_zoo)
 ```
 
 ### Experiments using Combination×2 + ResNet features
@@ -212,7 +275,7 @@ trained on two feature types: Combination×2 and ResNet. We run fusion
 on the confidence scores, but not on the temporal displacement predictions, as
 fusing the latter did not bring any improvement. The confidence scores
 are combined using a weighted average of their logits, which uses a single weight
-parameter. When running experiments for the Challenge protocl, which does not have
+parameter. When running experiments for the Challenge protocol, which does not have
 a validation set available, we use the same parameter that was found from the
 Challenge Validated protocol. Thus, you should first run the commands below for
 the Challenge Validated protocol in order to find the weight parameter (by
@@ -228,11 +291,19 @@ approach with the commands below.
 
 ```python
 from bin.spotting_challenge_commands import \
-    commands_spotting_challenge_validated_fusion, print_commands
+    commands_spotting_challenge_validated_fusion, print_commands, RUN_NAME_ZOO
 
+# Commands for running both validation (to find the fusion weight) and testing:
 fusion_challenge_validated_commands = \
     commands_spotting_challenge_validated_fusion()
 print_commands(fusion_challenge_validated_commands)
+
+# Commands for running just testing, while reusing the
+# fusion weight from the model zoo:
+fusion_challenge_validated_commands_zoo = \
+    commands_spotting_challenge_validated_fusion(
+        run_name=RUN_NAME_ZOO, do_train=False)
+print_commands(fusion_challenge_validated_commands_zoo)
 ```
 
 #### Challenge protocol
@@ -244,10 +315,21 @@ can combine them using our averaging approach with the commands below.
 
 ```python
 from bin.spotting_challenge_commands import \
-    commands_spotting_challenge_fusion, print_commands
+    commands_spotting_challenge_fusion, print_commands, RUN_NAME_ZOO
 
+# Note that this protocol does not involve a validation step. It reuses
+# the fusion weight found in the Challenge Validated protocol above, since the
+# Challenge protocol (used here) does not have a validation set.
+
+# Standard commands for the Challenge protocol:
 fusion_challenge_commands = commands_spotting_challenge_fusion()
 print_commands(fusion_challenge_commands)
+
+# Commands for the Challenge protocol using features computed using the
+# models from the zoo.
+fusion_challenge_commands_zoo = commands_spotting_challenge_fusion(
+    run_name=RUN_NAME_ZOO)
+print_commands(fusion_challenge_commands_zoo)
 ```
 
 #### Test protocol
@@ -259,15 +341,15 @@ as inputs to the fusion.
 
 ```python
 from bin.spotting_challenge_commands import \
-    commands_spotting_test_fusion, print_commands
+    commands_spotting_test_fusion, print_commands, RUN_NAME_ZOO
 
+# Commands for running both validation (to find the fusion weight) and testing:
 fusion_test_commands = commands_spotting_test_fusion()
 print_commands(fusion_test_commands)
+
+# Commands for running just testing, while reusing the
+# fusion weight from the model zoo:
+fusion_test_commands_zoo = commands_spotting_test_fusion(
+    run_name=RUN_NAME_ZOO, do_train=False)
+print_commands(fusion_test_commands_zoo)
 ```
-
-### Experiments using Combination features
-
-We've done a set of experiments using the Test protocol where we directly
-use the original Baidu Combination features (without resampling to 2.0
-frames per second as above). In order to reproduce those, see
-[Reproducing-results-from-our-ICIP-2022-paper.md](Reproducing-results-from-our-ICIP-2022-paper.md)

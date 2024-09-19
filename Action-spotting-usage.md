@@ -7,6 +7,7 @@ The commands below are meant to
 give you a general idea of how to use the package. If you are specifically interested
 in reproducing results from our experiments, please see
 [Reproducing-results-from-the-SoccerNet-action-spotting-challenge-2022.md](Reproducing-results-from-the-SoccerNet-action-spotting-challenge-2022.md).
+Those instructions also explain how to download and use our pretrained models.
 
 ### Training models
 
