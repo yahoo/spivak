@@ -20,7 +20,7 @@ INSTALL_REQUIRES = [
     # Note: some portion of the code here does not depend on TensorFlow,
     # so if you are not interested in using the models, you probably
     # don't really have to install TensorFlow.
-    "tensorflow>=2.3.0,<2.8.0",
+    "tensorflow~=2.7.0",
     "tensorboard~=2.7.0",
     # This version of tensorflow_probability is needed so that it works with
     # Tensorflow 2.3. It also happens to work with 2.7. If you are using 2.7
@@ -31,6 +31,7 @@ INSTALL_REQUIRES = [
     # addons package. This version also works with TensorFlow 2.7, even though
     # it will print out some warnings.
     "tensorflow-addons~=0.13.0",
+    "typing_extensions==4.7.1",
     "plotly>=5.4.0,<5.6.0",
     # kaleido is used for being able to render pdf plots with plotly.
     "kaleido~=0.2.1",
@@ -38,6 +39,7 @@ INSTALL_REQUIRES = [
     # spivak.feature_extraction.SoccerNetDataLoader.py.
     "scikit-video~=1.1.11",
     "moviepy~=1.0.3",
+    "imageio-ffmpeg==0.4.9",
     "imutils~=0.5.4",
     # packaging is only used by
     # spivak.models.assembly.huggingface_activations.py.

@@ -1,6 +1,11 @@
 # spivak: <ins>sp</ins>orts <ins>i</ins>ndeed <ins>v</ins>ideo <ins>a</ins>nalysis <ins>k</ins>it
 > A toolkit for automatic analysis of sports videos.
 
+## Updates
+
+- [Sept 2024]: we have released pretrained models for action spotting on the SoccerNet dataset.
+Please see [Reproducing-results-from-the-SoccerNet-action-spotting-challenge-2022.md](Reproducing-results-from-the-SoccerNet-action-spotting-challenge-2022.md).
+
 ## Background
 
 This package implements methods for action spotting and camera
@@ -32,8 +37,8 @@ In MMSports, 2022.
 
 Our models depend on TensorFlow, though this package also includes
 some evaluation and visualization code which does not. We've currently
-only tested our code using TensorFlow 2.3.0 and 2.7.0, thus the
-corresponding range is currently specified in the
+only tested our code using TensorFlow 2.7.0, thus the
+corresponding version is currently specified in the
 [setup.py](setup.py) file. Certain visualization
 scripts depend on ffmpeg via PyAV (`av` pip package). The rest of
 the dependencies are specified in [setup.py](setup.py) and can
@@ -129,11 +134,11 @@ ln -s YOUR_VIDEOS_224P_FOLDER  videos_224p  # For the low-resolution videos.
 
 ## Action spotting usage
 
-Please see [Action-spotting-usage.md](Action-spotting-usage.md).
-
-## Camera shot segmentation usage
-
-Stay tuned! Instructions for running the camera shot segmentation code should be coming soon.
+After completing the setup steps above, please see
+[Action-spotting-usage.md](Action-spotting-usage.md) for action spotting
+usage instructions. Additionally, to download our pretrained action
+spotting models and to reproduce results from our experiments, please see
+[Reproducing-results-from-the-SoccerNet-action-spotting-challenge-2022.md](Reproducing-results-from-the-SoccerNet-action-spotting-challenge-2022.md).
 
 ## Citations
 
